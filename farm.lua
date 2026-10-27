@@ -1,4 +1,4 @@
--- Delta Executor Ultimate Auto-Farm (v15 - NPC Farm Edition)
+-- Delta Executor Ultimate Auto-Farm (v15.1 - Fixed Key Validation)
 -- Access License Key: farmedit
 
 local Players = game:GetService("Players")
@@ -9,8 +9,8 @@ local player = Players.LocalPlayer
 
 local secretKey = "farmedit"
 local farmActive = false
-local farmDelay = 1.0 -- Enforced 1 second target transition delay
-local currentMode = "Cores" -- Toggle modes: Cores or NPCs
+local farmDelay = 1.0
+local currentMode = "Cores"
 
 local parentGui = player:WaitForChild("PlayerGui")
 if parentGui:FindFirstChild("EliteCoreFarmUI") then
@@ -43,7 +43,7 @@ mainCorner.CornerRadius = UDim.new(0, 14)
 mainCorner.Parent = mainFrame
 
 local borderStroke = Instance.new("UIStroke")
-borderStroke.Color = Color3.fromRGB(255, 165, 0) -- Amber Locked State
+borderStroke.Color = Color3.fromRGB(255, 165, 0)
 borderStroke.Thickness = 2
 borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 borderStroke.Parent = mainFrame
@@ -51,7 +51,7 @@ borderStroke.Parent = mainFrame
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
 titleLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-titleLabel.Text = "   ASTRONAUT ENGINE [v15]"
+titleLabel.Text = "   ASTRONAUT ENGINE [v15.1]"
 titleLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamBold
@@ -133,7 +133,6 @@ statusLabel.TextSize = 12
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = mainFrame
 
--- Mode Selection Button
 local modeButton = Instance.new("TextButton")
 modeButton.Size = UDim2.new(1, -30, 0, 35)
 modeButton.Position = UDim2.new(0, 15, 0, 90)
@@ -172,7 +171,6 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = toggleButton
 
--- Global Target Core and Head Finders
 local function getTargets(name)
     local targets = {}
     local workspaceChildren = Workspace:GetDescendants()
@@ -199,7 +197,6 @@ local function getClosestTarget(list, hrp)
     return closest
 end
 
--- Weapon Click Execution Simulation
 local function performWeaponShot()
     VirtualUser:Button1Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
     task.wait(0.05)
@@ -218,7 +215,6 @@ local function triggerPrompt(prompt)
     end
 end
 
--- UI State Management Engine
 local function updateUI()
     if farmActive then
         toggleButton.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
@@ -238,7 +234,6 @@ local function toggleFarm()
     updateUI()
 end
 
--- Mode Controller Logic
 modeButton.MouseButton1Click:Connect(function()
     if keyFrame.Parent ~= nil then return end
     if currentMode == "Cores" then
@@ -252,17 +247,20 @@ modeButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Validation Event Action Trigger
+-- Key Validation Action (With String Clean Fix)
 checkButton.MouseButton1Click:Connect(function()
-    if keyInput.Text == secretKey then
+    -- Clean string removes trailing newlines, spaces, and tabs caused by mobile clipboard
+    local cleanInput = keyInput.Text:gsub("%s+", ""):gsub("%c+", "")
+    
+    if cleanInput == secretKey then
         keyFrame:Destroy()
-        borderStroke.Color = Color3.fromRGB(0, 200, 255) -- Cyan Authorized State
+        borderStroke.Color = Color3.fromRGB(0, 200, 255)
         titleLabel.TextColor3 = Color3.fromRGB(0, 210, 255)
         statusLabel.Text = "STATUS: IDLE"
     else
         keyNotice.Text = "ACCESS DENIED! WRONG SYSTEM LICENSE"
         keyNotice.TextColor3 = Color3.fromRGB(255, 50, 50)
-        task.wait(1.5)
+        task.wait(1.2)
         keyNotice.Text = "ENTER SECURITY LICENSE KEY:"
         keyNotice.TextColor3 = Color3.fromRGB(180, 180, 190)
     end
@@ -277,7 +275,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Advanced Multi-Mode Core Loop Engine
+-- Automation Loop
 task.spawn(function()
     local processedTargets = {}
     
@@ -299,19 +297,14 @@ task.spawn(function()
                         table.insert(filteredList, target)
                     end
                 end
-                
                 if #filteredList == 0 then
                     processedTargets = {}
                     filteredList = foundList
                 end
-                
                 local activeTarget = getClosestTarget(filteredList, hrp)
-                
                 if activeTarget then
                     processedTargets[activeTarget] = true
-                    
                     if currentMode == "Cores" then
-                        -- Cores Method: Standard Teleport Interaction
                         statusLabel.Text = "TARGET: FARMING NEAREST CORE"
                         local prompt = activeTarget:FindFirstChildOfClass("ProximityPrompt")
                         if not prompt then
@@ -319,7 +312,6 @@ task.spawn(function()
                                 if child:IsA("ProximityPrompt") then prompt = child break end
                             end
                         end
-                        
                         local elapsed = 0
                         while elapsed < 0.8 and farmActive and activeTarget and activeTarget.Parent and hrp.Parent do
                             hrp.CFrame = activeTarget.CFrame * CFrame.new(0, 0, 3)
@@ -329,22 +321,14 @@ task.spawn(function()
                             elapsed = elapsed + 0.1
                         end
                     else
-                        -- NPCs Combat Method: 8 Studs Offset Combat + Aimbot Focus + Instant Action
                         statusLabel.Text = "TARGET: ATTACKING NPC HEAD"
                         if activeTarget and activeTarget.Parent and hrp.Parent then
-                            -- Teleport character securely 8 studs offset horizontally away from target head
                             hrp.CFrame = activeTarget.CFrame * CFrame.new(0, 0, 8)
                             hrp.Velocity = Vector3.new(0, 0, 0)
                             task.wait(0.1)
-                            
-                            -- Force Aimbot Camera lock onto target head
                             camera.CFrame = CFrame.new(camera.CFrame.Position, activeTarget.Position)
                             task.wait(0.05)
-                            
-                            -- Process shot interaction execution
                             performWeaponShot()
-                            
-                            -- 1 second safety transition delay buffer sequence
                             statusLabel.Text = "TARGET: CYCLE DELAY RECOVERY..."
                             task.wait(1.0)
                         end
